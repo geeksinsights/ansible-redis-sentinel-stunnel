@@ -1,0 +1,360 @@
+---
+#
+# Install/run Redis/Sentinel/Stunnel
+#
+
+- name: Obtain hostname
+  shell: "hostname -f"
+  register: hostname
+  become: true
+  
+- name: Install dependencies
+  yum: 
+    name:
+      - tcl
+      - stunnel
+      - java-openjdk-headless
+      - dos2unix
+    state: present
+  become: true
+
+
+- name: Install Yum Package
+  shell: |
+    yum -y groupinstall "Development Tools"
+  become: true
+  warn: False
+
+- name: Download and install redis
+  shell: |
+    cd /opt
+    wget download.redis.io/releases/redis-4.0.10.tar.gz
+    tar -xf redis-4.0.10.tar.gz
+    cd redis-4.0.10
+    sudo make
+    sudo make install
+  become: true
+
+- name: Create user
+  user: 
+    name="redis" password="redis"
+  createhome: no 
+  state: present 
+  become: true
+
+- name: Create Required Directories
+  shell: |
+    mkdir -p /etc/redis /var/run/redis /var/log/redis {{ data_dir }}
+    chown -R redis:daemon /opt/redis-4.0.10
+    chown -R redis:daemon /var/run/redis
+    chown -R redis:daemon /var/log/redis
+    chown -R redis:daemon {{ data_dir }}
+  become: true
+
+- name: Disable THP support scripts added to rc.local
+  lineinfile:
+    path: /etc/rc.local
+    line: |
+      echo never > /sys/kernel/mm/transparent_hugepage/enabled
+      echo never > /sys/kernel/mm/transparent_hugepage/defrag
+
+- name: Change permissions of /etc/rc.local to make it run on boot
+  shell: |
+      chmod +x /etc/rc.d/rc.local
+      echo never > /sys/kernel/mm/transparent_hugepage/enabled
+  become_method: sudo
+
+- name: Add or modify nofile soft limit for all 
+  pam_limits:
+       domain: '*'
+       limit_type: soft
+       limit_item: nproc
+       value: 65000
+
+- name: Add or modify fsize hard limit for the all. Keep or set the maximal value.
+  pam_limits:
+    domain: '*'
+    limit_type: hard
+    limit_item: nproc
+    value: 1000000
+    use_max: yes
+
+- name: Add or modify memlock, both soft and hard, limit for the user root with a comment.
+  pam_limits:
+    domain: root
+    limit_type: '-'
+    limit_item: memlock
+    value: unlimited
+    comment: unlimited memory lock for root
+
+- name: Add or modify hard nofile limits for wildcard *
+  pam_limits:
+    domain: '*'
+    limit_type: '-'
+    limit_item: nofile
+    value: 1048576
+
+- name: Copy Redis Conf file
+  copy:
+    src="{{ role_path }}/files/sysctl.conf"
+    dest=/etc/
+    owner=root
+    group=root
+    mode=0750
+  become: true
+
+- name: Copy Redis Conf file
+  copy:
+    src="{{ role_path }}/files/redis.conf"
+    dest=/etc/redis/
+    owner=redis
+    group=daemon
+    mode=0750
+  become: true
+  
+- name: Copy Sentinel Conf file
+  copy:
+    src="{{ role_path }}/files/redis_sentinel.conf"
+    dest=/etc/redis/
+    owner=redis
+    group=daemon
+    mode=0750
+  become: true
+
+- name: Copy Stunnel Conf file
+  copy:
+    src="{{ role_path }}/files/stunnel.conf"
+    dest=/etc/stunnel/
+    owner=redis
+    group=daemon
+    mode=0750
+  become: true
+
+- name: Copy Redis Failover Script 
+  copy:
+    src="{{ role_path }}/files/redis_switch_state.sh"
+    dest=/opt/redis-4.0.10/src/
+    owner=redis
+    mode=770
+  become: true
+
+- name: Change Failover Script Permissions 
+  shell: |
+   chmod a+x /opt/redis-4.0.10/src/redis_switch_state.sh
+   chown redis: /opt/redis-4.0.10/src/redis_switch_state.sh
+   /sbin/sysctl -p
+  ignore_errors: true
+  become: true
+
+- name: Create Permissions for Redis Conf Files
+  shell: |
+    chown redis /etc/redis/redis.conf
+    chown redis /etc/redis/redis_sentinel.conf
+  become: true
+
+- name: Copy Redis Init Script 
+  copy:
+    src="{{ role_path }}/files/redis"
+    dest=/etc/init.d/
+    owner=redis
+    mode=770
+  become: true
+  
+- name: Copy Sentinel Init Script 
+  copy:
+    src="{{ role_path }}/files/sentinel"
+    dest=/etc/init.d/
+    owner=redis
+    mode=770
+  become: true
+
+- name: Copy Sentinel Init Script
+  copy:
+    src="{{ role_path }}/files/stunnel"
+    dest=/etc/init.d/
+    owner=redis
+    mode=770
+  become: true
+
+- name: Update redis clustername in sentinel conf
+  become: true
+  replace:
+    path=/etc/redis/redis_sentinel.conf
+    regexp='mycluster'
+    replace="{{ cluster_name }}"
+  ignore_errors: "{{ ansible_check_mode }}"
+
+- name: Update redis masternode name in sentinel conf
+  become: true
+  replace:
+    path=/etc/redis/redis_sentinel.conf
+    regexp='masternode'
+    replace="{{ master_node }}"
+  ignore_errors: "{{ ansible_check_mode }}"
+
+- name: Update redis masternode name in sentinel conf
+  become: true
+  replace:
+    path=/etc/redis/redis_sentinel.conf
+    regexp='dataDir'
+    replace="{{ data_dir }}"
+  ignore_errors: "{{ ansible_check_mode }}"
+
+
+- name: Update redis VIPADDRESS in stunnel conf
+  become: true
+  replace:
+    path=/etc/stunnel/stunnel.conf
+    regexp='VIPADDRESS'
+    replace="{{ vipaddress }}"
+  ignore_errors: "{{ ansible_check_mode }}"
+
+- name: Update redis VIPADDRES in failover script
+  become: true
+  replace:
+    path=/opt/redis-4.0.10/src/redis_switch_state.sh
+    regexp='VIPADDRESS'
+    replace="{{ vipaddress }}"
+  ignore_errors: "{{ ansible_check_mode }}"
+
+- name: Update redis masterauth in Redis conf
+  become: true
+  replace:
+     path=/etc/redis/redis.conf
+     regexp='masterpassword'
+     replace="{{ masterauthpwd }}"
+  ignore_errors: "{{ ansible_check_mode }}"
+
+- name: Update redis masterauth in Redis conf
+  become: true
+  replace:
+     path=/etc/init.d/redis
+     regexp='masterpassword'
+     replace="{{ masterauthpwd }}"
+  ignore_errors: "{{ ansible_check_mode }}"
+
+- name: Update redis masterauth in sentinel conf
+  become: true
+  replace:
+     path=/etc/redis/redis_sentinel.conf
+     regexp='masterpassword'
+     replace="{{ masterauthpwd }}"
+  ignore_errors: "{{ ansible_check_mode }}" 
+  
+ 
+- name: Update redis requirepass in Redis conf
+  become: true
+  replace:
+     path=/etc/redis/redis.conf
+     regexp='clientpassword'
+     replace="{{ clientauthpwd }}"
+  ignore_errors: "{{ ansible_check_mode }}"
+
+- name: Update redis datadirect in Redis conf
+  become: true
+  replace:
+     path=/etc/redis/redis.conf
+     regexp='dataDir'
+     replace="{{ data_dir }}"
+  ignore_errors: "{{ ansible_check_mode }}"
+
+
+- name: Fix ASCII Characters issues in shell scripts
+  shell: |
+    dos2unix /etc/init.d/redis
+    dos2unix /etc/init.d/stunnel
+    dos2unix /etc/init.d/sentinel
+    dos2unix /opt/redis-4.0.10/src/redis_switch_state.sh
+    systemctl daemon-reload
+  become: true
+
+- name: Update stunnel file with right keys
+  become: true
+  replace:
+    path=/etc/stunnel/stunnel.conf
+    regexp='domain'
+    replace="{{ domain }}"
+  ignore_errors: "{{ ansible_check_mode }}"
+
+- name: Copy SSL Certificate to Stunnel
+  copy:
+    src="{{ role_path }}/files/{{ env }}/server.crt"
+    dest=/etc/stunnel/
+    owner=redis
+    mode=600
+  become: true
+
+- name: Copy SSL Key to Stunnel
+  copy:
+    src="{{ role_path }}/files/{{ env }}/server.key"
+    dest=/etc/stunnel/
+    owner=redis
+    mode=400
+  become: true
+
+- name: Update Stunnel stuff
+  become : true
+  shell : |
+    chown root:root /etc/init.d/stunnel
+    chmod 0755 /etc/init.d/stunnel
+    chkconfig --add /etc/init.d/stunnel
+    chkconfig --add /etc/init.d/sentinel
+    chkconfig --add /etc/init.d/redis
+    stunnel /etc/stunnel/stunnel.conf
+  ignore_errors: "{{ ansible_check_mode }}"
+
+- name: Copy Hosts  file
+  copy:
+    src="{{ role_path }}/files/hosts"
+    dest=/etc/
+    owner=root
+    group=root
+    mode=0644
+  become: true
+
+- name: Update hosts file with right environment Dev/QA/STG/PRD
+  become: true
+  replace:
+    path=/etc/hosts
+    regexp='domain1'
+    replace="{{ domain }}"
+  ignore_errors: "{{ ansible_check_mode }}"
+
+- name: Update hosts file with right environment Dev/QA/STG/PRD
+  become: true
+  replace:
+    path=/etc/hosts
+    regexp='env'
+    replace="{{ env }}"
+  ignore_errors: "{{ ansible_check_mode }}"
+
+
+- name: Update hosts file with right subnet
+  become: true
+  replace:
+    path=/etc/hosts
+    regexp='subnet'
+    replace="{{ subnet }}"
+  ignore_errors: "{{ ansible_check_mode }}"
+
+- name: Add Line for slaveof configuration
+  lineinfile:
+    path: /etc/redis/redis.conf
+    line: slaveof {{ master_node }} 6379
+  when: "{{ play_hosts.index(inventory_hostname) }} != 0"
+
+- name: Start redis Service
+  command: service redis start
+  ignore_errors: false
+  become: true
+
+- name: Start sentinel service
+  command: service sentinel start
+  ignore_errors: false
+  become: true
+  
+- name: Start Stunnel service
+  command: service stunnel start
+  ignore_errors: false
+  become: true
+

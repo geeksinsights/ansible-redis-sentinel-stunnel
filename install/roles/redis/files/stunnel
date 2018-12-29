@@ -1,0 +1,66 @@
+#!/bin/bash
+#
+# stunnel Starts/stop the "at" daemon
+#
+# chkconfig:   345 95 5
+# description: Provides SSL client/server tunneling
+### BEGIN INIT INFO
+# Provides: stunnel
+# Required-Start: $local_fs
+# Required-Stop: $local_fs
+# Default-Start: 345
+# Default-Stop: 95
+# Short-Description: Starts/stop the "stunnel" daemon
+# Description:       Provides SSL client/server tunneling
+### END INIT INFO
+. /etc/init.d/functions
+test -x /usr/bin/stunnel || exit 0
+RETVAL=0
+prog="stunnel"
+start() {
+  if [ ! -f /var/lock/subsys/stunnel ]; then
+    echo -n $"Starting $prog: "
+    daemon /usr/bin/stunnel
+    RETVAL=$?
+    [ $RETVAL -eq 0 ] && touch /var/lock/subsys/stunnel
+    echo
+  fi
+  return $RETVAL
+}
+
+stop() {
+  echo -n $"Stopping $prog: "
+  killproc /usr/bin/stunnel
+  RETVAL=$?
+  [ $RETVAL -eq 0 ] && rm -f /var/lock/subsys/stunnel
+  echo
+  return $RETVAL
+}
+restart() {
+  stop
+  start
+}
+
+case "$1" in
+  start)
+    start
+   ;;
+  stop)
+    stop
+  ;;
+  reload|restart)
+    restart
+  ;;
+  condrestart)
+   if [ -f /var/lock/subsys/stunnel ]; then
+     restart
+   fi
+  ;;
+  status)
+    status /usr/sbin/stunnel
+  ;;
+  *)
+    echo $"Usage: $0 {start|stop|restart|condrestart|status}"
+    exit 1
+esac
+exit $RETVAL

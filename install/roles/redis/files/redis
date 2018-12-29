@@ -1,0 +1,56 @@
+#!/bin/sh
+#
+# Simple Redis init.d script conceived to work on Linux systems
+# as it does use of the /proc filesystem.
+#
+# chkconfig: 345 85 15
+# description:  Redis is persistent key-value database
+# processname: redis_6379
+
+# Source function library
+. /etc/init.d/functions
+
+REDISHOST=`ifconfig | grep inet | head -1 | awk '{print $2}'`
+REDISPORT=6379
+EXEC=/usr/local/bin/redis-server
+USER=redis
+CLIEXEC=/usr/local/bin/redis-cli
+PIDFILE=/var/run/redis/redis_${REDISPORT}.pid
+CONF="/etc/redis/redis.conf"
+PASSWORD="masterpassword"
+case "$1" in
+    start)
+        if [ -f $PIDFILE ]
+        then
+                echo "$PIDFILE exists, process is already running or crashed"
+        else
+                echo "Starting Redis server..."
+                daemon --user $USER $EXEC $CONF
+        fi
+        ;;
+    stop)
+        if [ ! -f $PIDFILE ]
+        then
+                echo "$PIDFILE does not exist, process is not running"
+        else
+                PID=$(cat $PIDFILE)
+                echo "Stopping ..."
+                daemon --user $USER $CLIEXEC -h $REDISHOST -p $REDISPORT -a $PASSWORD shutdown
+                while [ -x /proc/${PID} ]
+                do
+                    echo "Waiting for Redis to shutdown ..."
+                    sleep 1
+                done
+                echo "Redis stopped"
+        fi
+        ;;
+    restart)
+        stop
+        sleep 3
+        start
+        ;;
+    *)
+        echo "Usage: $PROG_NAME {start|stop|restart}"
+		exit 1
+		;;
+esac

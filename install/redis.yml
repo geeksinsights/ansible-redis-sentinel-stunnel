@@ -1,0 +1,11 @@
+---
+#
+# Playbook to install the redis
+#
+
+- hosts: redis
+  remote_user: "{{ ansible_system_user }}"
+  vars_files:
+    - group_vars/redis_vars.yml
+  roles:
+    - { role: redis }
