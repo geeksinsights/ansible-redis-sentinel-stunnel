@@ -1,9 +1,12 @@
 # ansible-redis-sentinel-stunnel
 This playbook installed Redis 4.0.10 along with Sentinel with master/slave mode. Redis does not natively support the SSL hence Stunnel is used for SSL/TLS 
 
+
 # Pre-requisities
+
   - **Need atleast three nodes one master and two slaves
-  
+
+
   - **Need to copy SSL/TLS certificates & Key
   
     - Name them as server.key and server.crt
@@ -15,21 +18,34 @@ This playbook installed Redis 4.0.10 along with Sentinel with master/slave mode.
     - Need lot of variables to define 
 
 # Installation
+
   git clone <>
 
 # **List of Variables**
+
 Change the following variables in install/group_vars file
   ansible_system_user: root
-  epel_repo: https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+  
+  epel_repo: https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.
+  
   subnet: 108
-  env: stg 
+  
+  env: stg
+  
   domain: localdomain
+  
   master_node: x.x.x.x
+  
   masterauthpwd: inputpasswordhere 
+  
   clientauthpwd: inputpasswordhere 
+  
   cluster_name: redis-{{ env }}-cluster 
+  
   vipaddress: x.x.x.x
+  
   data_dir: /redis1/data
+  
 
 # Run the Playbook
   - ansible-playbook -i hosts install/redis.yml
