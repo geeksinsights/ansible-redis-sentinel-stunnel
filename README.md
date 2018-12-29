@@ -2,6 +2,9 @@
 This playbook installed Redis 4.0.10 along with Sentinel with master/slave mode. Redis does not natively support the SSL hence Stunnel is used for SSL/TLS 
 
 
+![alt text](https://github.com/geeksinsights/ansible-redis-sentinel-stunnel/blob/master/redis-sentinel-stunnel.JPG)
+
+
 # Pre-requisities
 
   - **Need atleast three nodes one master and two slaves
