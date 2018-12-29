@@ -27,28 +27,28 @@ This playbook installed Redis 4.0.10 along with Sentinel with master/slave mode.
 # **List of Variables**
 
 Change the following variables in install/group_vars file
-  ansible_system_user: root
-  
-  epel_repo: https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.
-  
-  subnet: 108
-  
-  env: stg
-  
-  domain: localdomain
-  
-  master_node: x.x.x.x
-  
-  masterauthpwd: inputpasswordhere 
-  
-  clientauthpwd: inputpasswordhere 
-  
-  cluster_name: redis-{{ env }}-cluster 
-  
-  vipaddress: x.x.x.x
-  
-  data_dir: /redis1/data
-  
+      ansible_system_user: root
+
+      epel_repo: https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.
+
+      subnet: 108
+
+      env: stg
+
+      domain: localdomain
+
+      master_node: x.x.x.x
+
+      masterauthpwd: inputpasswordhere 
+
+      clientauthpwd: inputpasswordhere 
+
+      cluster_name: redis-{{ env }}-cluster 
+
+      vipaddress: x.x.x.x
+
+      data_dir: /redis1/data
+
 
 # Run the Playbook
   - ansible-playbook -i hosts install/redis.yml
