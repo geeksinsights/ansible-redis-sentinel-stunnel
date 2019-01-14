@@ -13,13 +13,13 @@ epel_repo: https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rp
 subnet: 108
 env: stg 
 domain: localdomain
-
+ssl_mode: No
 ##
 ## Provide IP address only for master node for sentinel configuration
 ##
-master_node: x.x.x.x
+master_node: 192.168.56.110
 masterauthpwd: inputpasswordhere 
 clientauthpwd: inputpasswordhere 
 cluster_name: redis-{{ env }}-cluster 
-vipaddress: x.x.x.x
+vipaddress: 192.168.56.113
 data_dir: /redis1/data
