@@ -5,6 +5,9 @@
 
 - hosts: redis
   remote_user: "{{ ansible_system_user }}"
+  become_user: root
+  become_method: sudo
+  become: true
   vars_files:
     - group_vars/redis_vars.yml
   roles:
