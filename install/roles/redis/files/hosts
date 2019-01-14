@@ -1,6 +1,6 @@
 127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
 ::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
-172.20.subnet.141  envredis01.domain1 envredis01
-172.20.subnet.142  envredis02.domain1 envredis02
-172.20.subnet.143  envredis03.domain1 envredis03
-172.20.subnet.144  redisvip.domain1   redisvip
+192.168.56.110  envredis01.domain1 envredis01
+192.168.56.110  envredis02.domain1 envredis02
+192.168.56.110  envredis03.domain1 envredis03
+192.168.56.113  redisvip.domain1   redisvip
