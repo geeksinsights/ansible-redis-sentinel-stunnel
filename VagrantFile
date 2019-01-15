@@ -1,0 +1,61 @@
+Vagrant.configure("2") do |config|
+  config.vm.define "stgredis01" do |stgredis01|
+    stgredis01.vm.box = "centos/7"
+    stgredis01.vm.hostname = 'stgredis01'
+    stgredis01.vm.box_url = "centos/7"
+
+    stgredis01.vm.network :public_network, ip: "192.168.56.110"
+    stgredis01.vm.network :forwarded_port, guest: 22, host: 20122, id: "ssh"
+
+
+    stgredis01.vm.provider :virtualbox do |v|
+      v.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
+      v.customize ["modifyvm", :id, "--memory", 1024]
+      v.customize ["modifyvm", :id, "--name", "stgredis01"]
+    end
+  end
+
+  config.vm.define "stgredis02" do |stgredis02|
+    stgredis02.vm.box = "centos/7"
+    stgredis02.vm.hostname = 'stgredis02'
+    stgredis02.vm.box_url = "centos/7"
+
+    stgredis02.vm.network :public_network, ip: "192.168.56.113"
+    stgredis02.vm.network :forwarded_port, guest: 22, host: 20123, id: "ssh"
+
+
+    stgredis02.vm.provider :virtualbox do |v|
+      v.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
+      v.customize ["modifyvm", :id, "--memory", 1024]
+      v.customize ["modifyvm", :id, "--name", "stgredis02"]
+    end
+  end
+  
+    config.vm.define "stgredis03" do |stgredis03|
+    stgredis03.vm.box = "centos/7"
+    stgredis03.vm.hostname = 'stgredis03'
+    stgredis03.vm.box_url = "centos/7"
+
+    stgredis03.vm.network :public_network, ip: "192.168.56.112"
+    stgredis03.vm.network :forwarded_port, guest: 22, host: 20124, id: "ssh"
+
+
+    stgredis03.vm.provider :virtualbox do |v|
+      v.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
+      v.customize ["modifyvm", :id, "--memory", 1024]
+      v.customize ["modifyvm", :id, "--name", "stgredis03"]
+    end
+  end
+
+
+    if Vagrant::Util::Platform.windows?
+    config.vm.provision :ansible_local do |ansible|
+      ansible.playbook = "install/redis.yml"
+    end
+  else
+    config.vm.provision :ansible do |ansible|
+      ansible.playbook = "install/redis.yml"
+    end
+  end
+  
+end
